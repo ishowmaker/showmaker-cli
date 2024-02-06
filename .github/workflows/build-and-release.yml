@@ -61,7 +61,17 @@ jobs:
       - name: List files
         run: | 
           ls -al .
-          ls -al dist/
+          if [ ${{ runner.os }} == 'Linux' ]; then
+            EXECUTABLE_PATH="./Linux-Executable/showmaker"
+          elif [ ${{ runner.os }} == 'Windows' ]; then
+            EXECUTABLE_PATH="./Windows-Executable/showmaker.exe"
+          elif [ ${{ runner.os }} == 'macOS' ]; then
+            EXECUTABLE_PATH="./macOS-Executable/showmaker.app"
+          else
+            echo "Unsupported OS"
+            exit 1
+          fi
+          ls -al $EXECUTABLE_PATH
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
@@ -69,6 +79,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./showmaker
+          asset_path: $EXECUTABLE_PATH
           asset_name: Executable-${{ matrix.os }}
           asset_content_type: application/octet-stream
