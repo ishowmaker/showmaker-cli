@@ -1,7 +1,7 @@
+import os
 import pathlib
 
 from chaser_util import config
-from pytest_mock import mocker
 
 
 def test_config_dir_with_xdg_config_home(monkeypatch):
@@ -12,4 +12,5 @@ def test_config_dir_with_xdg_config_home(monkeypatch):
 def test_config_dir_without_xdg_config_home(monkeypatch, mocker):
     monkeypatch.delenv("CHASER_CONFIG_HOME", raising=False)
     mocker.patch.object(pathlib.Path, 'home', return_value="/home/user")
-    assert config.config_dir() == "/home/user/.config"
+    expected_path = os.path.join("/home", "user", ".config")
+    assert config.config_dir() == expected_path

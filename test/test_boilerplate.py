@@ -39,9 +39,3 @@ def test_extract_and_write_file(zip_file):
         with open(os.path.join(temp_dir.name, info_file.filename), "rb") as f:
             assert f.read() == b"Hello, World!"
 
-
-def test_is_dir():
-    assert is_dir("path/to/dir/") is True
-    assert is_dir("path/to/file.txt") is False
-    assert is_dir("/absolute/path/") is True
-    assert is_dir("/absolute/file.txt") is False

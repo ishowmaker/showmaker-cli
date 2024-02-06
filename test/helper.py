@@ -4,7 +4,7 @@ import zipfile
 
 
 def is_dir(path: str) -> bool:
-    return os.path.sep == path[-1]
+    return os.path.isdir(path)
 
 
 def extract_and_write_file(info: zipfile.ZipInfo, zf: zipfile.ZipFile, dest_path: str):
