@@ -33,6 +33,11 @@ jobs:
       run: |
         pyinstaller showmaker.spec
 
+    - name: List directory contents
+      run: |
+        ls -la ./
+        ls -la ./dist
+
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
