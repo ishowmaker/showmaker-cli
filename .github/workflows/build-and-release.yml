@@ -58,12 +58,17 @@ jobs:
           draft: false
           prerelease: false
 
+      - name: List files
+        run: | 
+          ls -al .
+          ls -al dist/
+
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ runner.os == 'Windows' && 'dist\showmaker.exe' || 'dist/showmaker'}}
+          asset_path: ./showmaker
           asset_name: Executable-${{ matrix.os }}
           asset_content_type: application/octet-stream
