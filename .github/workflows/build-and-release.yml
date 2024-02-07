@@ -58,27 +58,33 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: List files
-        run: | 
-          ls -al .
-          if [ ${{ runner.os }} == 'Linux' ]; then
-            EXECUTABLE_PATH="./Linux-Executable/showmaker"
-          elif [ ${{ runner.os }} == 'Windows' ]; then
-            EXECUTABLE_PATH="./Windows-Executable/showmaker.exe"
-          elif [ ${{ runner.os }} == 'macOS' ]; then
-            EXECUTABLE_PATH="./macOS-Executable/showmaker.app"
-          else
-            echo "Unsupported OS"
-            exit 1
-          fi
-          ls -al $EXECUTABLE_PATH
 
-      - name: Upload Release Asset
+      - name: Upload Ubuntu Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: $EXECUTABLE_PATH
-          asset_name: Executable-${{ matrix.os }}
+          asset_path: Linux-Executable/showmaker
+          asset_name: Executable-ubuntu-latest
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: Windows-Executable/showmaker.exe
+          asset_name: Executable-windows-latest
+          asset_content_type: application/octet-stream
+
+      - name: Upload MacOS Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: macOS-Executable/showmaker
+          asset_name: Executable-macos-latest
           asset_content_type: application/octet-stream
