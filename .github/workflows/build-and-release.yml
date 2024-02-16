@@ -56,7 +56,7 @@ jobs:
     - name: Package
       working-directory: .
       run: |
-        tar -zcvf showmaker-${{ matrix.os }}.tar.gz -C showmaker-cli/dist *  
+        tar -zcvf showmaker-${{ matrix.os }}.tar.gz -C dist .  
 
     - name: Upload Release Asset
       id: upload-release-asset
