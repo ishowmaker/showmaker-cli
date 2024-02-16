@@ -6,19 +6,42 @@ on:
       - 'v*'
 
 jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+
   build:
-    name: Build on ${{ matrix.os }}
+    name: Build ShowMaker
+    needs: release
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: showmaker-cli
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: [3.7]
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
-        python-version: '3.x'
+        python-version: ${{ matrix.python-version }}
 
     - name: Install Dependencies
       run: |
@@ -33,58 +56,18 @@ jobs:
       run: |
         pyinstaller showmaker.spec
 
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
+    - name: Package
+      working-directory: .
+      run: |
+        tar -zcvf showmaker-${{ matrix.os }}.tar.gz -C showmaker-cli/dist *  
+
+    - name: Upload Release Asset
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
       with:
-        name: ${{ runner.os }}-Executable
-        path: dist/
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v2
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-
-      - name: Upload Ubuntu Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: Linux-Executable/showmaker
-          asset_name: Executable-ubuntu-latest
-          asset_content_type: application/octet-stream
-
-      - name: Upload Windows Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: Windows-Executable/showmaker.exe
-          asset_name: Executable-windows-latest
-          asset_content_type: application/octet-stream
-
-      - name: Upload MacOS Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: macOS-Executable/showmaker
-          asset_name: Executable-macos-latest
-          asset_content_type: application/octet-stream
+        upload_url: ${{ needs.release.outputs.upload_url }}
+        asset_path: ./showmaker-${{ matrix.os }}.tar.gz
+        asset_name: showmaker-${{ matrix.os }}.tar.gz
+        asset_content_type: application/gzip
