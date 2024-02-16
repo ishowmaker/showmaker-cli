@@ -4,6 +4,7 @@ import os
 import platform
 import subprocess, multiprocessing
 from rich import print
+import shutil
 
 
 class Runtime:
@@ -45,6 +46,7 @@ def run_command(exec_path, args, work_dir, port):
 
 
 def detect_runtime(project_path: str):
+    project_path = os.path.expanduser(project_path)
     package_file_path = os.path.join(project_path, "package.json")
     if (
             os.path.isfile(os.path.join(project_path, "server.js"))
@@ -141,23 +143,8 @@ def new_go_runtime(project_path):
 
 
 def lookup_bin(fallbacks):
-    system = platform.system()
-    print("current system: ", system)
     for i, _bin in enumerate(fallbacks):
-        bin_path = None
-        if system == 'Windows':
-            print("Windows Path: ", os.environ["PATH"])
-            for path in os.environ["PATH"].split(os.pathsep):
-                candidate = os.path.join(path, _bin)
-                print("candidate: ", candidate)
-                if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-                    bin_path = candidate
-                    break
-        else:
-            try:
-                bin_path = subprocess.check_output(["which", _bin]).decode().strip()
-            except subprocess.CalledProcessError:
-                pass
+        bin_path = shutil.which(_bin)
 
         if bin_path:
             print(f"Found executable file: {bin_path}")

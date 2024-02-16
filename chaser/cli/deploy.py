@@ -45,9 +45,9 @@ def deploy(
 
 
 def _package_project(project_path: str, name: str):
-    rt = detect_runtime(project_path)
-    if rt is None:
-        print("No runtime detected.")
+    rt,error = detect_runtime(project_path)
+    if error is not None:
+        typer.echo("Failed to detect runtime.", error)
         return
     fileDir = tempfile.mkdtemp(prefix="chaser")
     archiveFilePath = os.path.join(fileDir, "chaser.zip")

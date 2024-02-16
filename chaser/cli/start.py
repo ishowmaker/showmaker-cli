@@ -27,6 +27,9 @@ def start(project_path: str = typer.Option(help="The project path."),
         typer.echo("Please login first.")
         return
     app_id = get_current_app_id(".")
+    if not app_id:
+        typer.echo("No app linked to the project yet. Please run `link` first.")
+        return
     print("Retrieving app info ...")
     app = get_app_info(app_id, access_token)
     print(f"Current app: [bold red] {app['name']} [/bold red] {app['appId']}")

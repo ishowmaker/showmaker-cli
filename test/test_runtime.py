@@ -5,26 +5,27 @@ import pytest
 from chaser.cli.runtime import lookup_bin, new_python_runtime
 
 
-@mock.patch('subprocess.check_output')
-def test_lookup_bin_found(mock_check_output):
-    mock_check_output.return_value = b'/usr/bin/python\n'
+@mock.patch('shutil.which')
+def test_lookup_bin_found(mock_which):
+    mock_which.return_value = '/usr/bin/python'
     result, error = lookup_bin(['python'])
     assert result == '/usr/bin/python'
     assert error is None
 
 
-@mock.patch('subprocess.check_output')
-def test_lookup_bin_not_found(mock_check_output):
+@mock.patch('shutil.which')
+def test_lookup_bin_not_found(mock_which):
+    mock_which.side_effect = [None] * 3
     with pytest.raises(FileNotFoundError):
-        mock_check_output.side_effect = subprocess.CalledProcessError(1, 'which', output=b'')
         lookup_bin(['python'])
 
 
-@mock.patch('subprocess.check_output')
-def test_lookup_bin_multiple_fallbacks(mock_check_output):
-    mock_check_output.side_effect = [
-        subprocess.CalledProcessError(1, 'which', output=b''),
-        b'/usr/local/bin/python3\n'
+@mock.patch('shutil.which')
+def test_lookup_bin_multiple_fallbacks(mock_which):
+    mock_which.side_effect = [
+        None,
+        '/usr/local/bin/python3',
+        '/usr/bin/python2'
     ]
     result, error = lookup_bin(['python2', 'python3', 'python'])
     assert result == '/usr/local/bin/python3'
