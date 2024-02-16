@@ -5,3 +5,4 @@ dist/
 build/
 test/.pytest_cache/
 .idea/
+.DS_Store

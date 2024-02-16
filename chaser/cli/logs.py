@@ -21,6 +21,9 @@ def print_log(
         typer.echo("Please login first")
         raise typer.Exit(1)
     current_app_id = get_current_app_id(".")
+    if not current_app_id:
+        typer.echo("No app linked to the project yet. Please run  link' first")
+        raise typer.Exit(1)
     typer.echo(f"Current app id: {current_app_id}")
     _receive_logs_by_limit(_json_log_printer, current_app_id, limit, follow, access_token)
 
