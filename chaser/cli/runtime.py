@@ -1,6 +1,7 @@
 import errno
 import json
 import os
+import platform
 import subprocess, multiprocessing
 from rich import print
 
@@ -140,12 +141,25 @@ def new_go_runtime(project_path):
 
 
 def lookup_bin(fallbacks):
+    system = platform.system()
     for i, _bin in enumerate(fallbacks):
-        try:
-            bin_path = subprocess.check_output(["which", _bin]).decode().strip()
+        bin_path = None
+        if system == 'Windows':
+            for path in os.environ["PATH"].split(os.pathsep):
+                candidate = os.path.join(path, _bin)
+                if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                    bin_path = candidate
+                    break
+        else:
+            try:
+                bin_path = subprocess.check_output(["which", _bin]).decode().strip()
+            except subprocess.CalledProcessError:
+                pass
+
+        if bin_path:
             print(f"Found executable file: {bin_path}")
             return bin_path, None
-        except subprocess.CalledProcessError:
+        else:
             if i != len(fallbacks) - 1:
                 print(f"Cannot find command {fallbacks[i]}, using {fallbacks[i + 1]} instead")
 
