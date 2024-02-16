@@ -142,11 +142,14 @@ def new_go_runtime(project_path):
 
 def lookup_bin(fallbacks):
     system = platform.system()
+    print("current system: ", system)
     for i, _bin in enumerate(fallbacks):
         bin_path = None
         if system == 'Windows':
+            print("Windows Path: ", os.environ["PATH"])
             for path in os.environ["PATH"].split(os.pathsep):
                 candidate = os.path.join(path, _bin)
+                print("candidate: ", candidate)
                 if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
                     bin_path = candidate
                     break
