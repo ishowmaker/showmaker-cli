@@ -12,9 +12,6 @@ def start(project_path: str = typer.Option(help="The project path."),
           port: str = typer.Option(default=3000, help="The port to run the project.")):
     """
     local start the project.
-    :param project_path:
-    :param port:
-    :return:
     """
     if project_path:
         print(f"Project path: {project_path}")

@@ -12,9 +12,6 @@ def print_log(
 ):
     """
     Print logs.
-    :param limit:
-    :param follow:
-    :return:
     """
     access_token = token_cache.get(Region.US)
     if not access_token:

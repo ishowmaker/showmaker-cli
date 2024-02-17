@@ -18,9 +18,6 @@ def deploy(
         project_dir: str = typer.Option(default=".", help="The project directory.")):
     """
     Deploy the project.
-    :param m:
-    :param project_dir:
-    :return:
     """
     print("Deploying the project ...")
     print(f"Deploy message: {m}")

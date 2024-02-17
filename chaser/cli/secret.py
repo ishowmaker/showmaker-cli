@@ -10,10 +10,7 @@ def set_secret(
         value: str = typer.Argument(..., help="KeyValue to set for the secret"),
 ):
     """
-    Example: secret set SECRET_KEY  SECRET_VALUE
-    :param secret_name:
-    :param value:
-    :return:
+    secret set SECRET_KEY  SECRET_VALUE
     """
     access_token = token_cache.get(Region.US)
     if not access_token:

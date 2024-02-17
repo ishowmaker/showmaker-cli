@@ -11,7 +11,6 @@ def login(
 ):
     """
     Login to Showmaker.
-    :param token:
     """
     typer.echo(f"Starting login with token.")
     try:

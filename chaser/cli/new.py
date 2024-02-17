@@ -11,8 +11,6 @@ from .access_token_cache import token_cache, Region
 def new_template(dest: Annotated[Optional[str], typer.Argument()] = None):
     """
     Create a new project from a template.
-    :param dest:
-    :return:
     """
     if dest is None:
         dest = "."

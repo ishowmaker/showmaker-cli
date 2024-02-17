@@ -22,6 +22,7 @@ def link():
     if not current_app_id:
         typer.echo("No app linked to the project yet.")
     selected = _select_app(apps, current_app_id)
+    typer.echo(f"Switching to app: {selected['name']} ...")
     link_app(".", selected['appId'])
 
 

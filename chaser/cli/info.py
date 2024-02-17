@@ -6,7 +6,6 @@ from .access_token_cache import token_cache, Region
 def info():
     """
     Show the current app info.
-    :return:
     """
     access_token = token_cache.get(Region.US)
     if not access_token:
