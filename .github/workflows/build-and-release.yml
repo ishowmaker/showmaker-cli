@@ -48,19 +48,15 @@ jobs:
     - name: Build Executable
       run: |
         if [ "${{ matrix.os }}" == "macos-latest" ]; then
-          # macOS 特定的构建命令
           if [ "${{ matrix.target }}" == "arm64" ]; then
-            pyinstaller --target-arch arm64 connectdev.spec
+            sed -i '' 's/target_arch=None/target_arch="arm64"/' connectdev.spec
           else
-            pyinstaller --target-arch x86_64 connectdev.spec
+            sed -i '' 's/target_arch=None/target_arch="x86_64"/' connectdev.spec
           fi
-        else
-          # 其他平台的构建命令
-          pyinstaller connectdev.spec
         fi
+        pyinstaller connectdev.spec
       shell: bash
 
-    # Windows 系统生成校验和
     - name: Generate checksum (Windows)
       if: matrix.os == 'windows-latest'
       shell: pwsh
@@ -69,7 +65,6 @@ jobs:
         $hash = Get-FileHash -Path connectdev.exe -Algorithm SHA256
         $hash.Hash > connectdev-${{ matrix.asset_name }}.sha256
 
-    # Unix 系统生成校验和
     - name: Generate checksum (Unix)
       if: matrix.os != 'windows-latest'
       shell: bash
