@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     name: Build ConnectDev
-    runs-on: ${{ matrix.runner || matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
@@ -21,15 +21,8 @@ jobs:
           - os: windows-latest
             asset_name: windows.exe
           - os: macos-latest
-            asset_name: macos-x86_64
-            target: x86_64
-            runner: macos-latest-xlarge
-          - os: macos-latest
             asset_name: macos-arm64
             target: arm64
-            runner: macos-latest
-
-    
 
     steps:
     - uses: actions/checkout@v2
@@ -38,7 +31,7 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: '3.9'
-        architecture: ${{ matrix.target == 'x86_64' && 'x64' || 'arm64' }}
+        architecture: ${{ matrix.target == 'arm64' && 'arm64' || 'x64' }}
 
     - name: Install Dependencies
       run: |
@@ -52,11 +45,7 @@ jobs:
     - name: Build Executable
       run: |
         if [ "${{ matrix.os }}" == "macos-latest" ]; then
-          if [ "${{ matrix.target }}" == "arm64" ]; then
-            sed -i '' 's/target_arch=None/target_arch="arm64"/' connectdev.spec
-          else
-            sed -i '' 's/target_arch=None/target_arch="x86_64"/' connectdev.spec
-          fi
+          sed -i '' 's/target_arch=None/target_arch="arm64"/' connectdev.spec
         fi
         pyinstaller connectdev.spec
       shell: bash
