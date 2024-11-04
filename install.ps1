@@ -1,3 +1,6 @@
+# 设置错误处理
+$ErrorActionPreference = "Stop"
+
 # 检查是否以管理员权限运行
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
     Write-Error "Please run this script as Administrator"
@@ -14,8 +17,14 @@ $RepoName = "showmaker-cli"
 Write-Host "Installing ConnectDev CLI..." -ForegroundColor Green
 
 # 获取最新版本
-$LatestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/$RepoOwner/$RepoName/releases/latest"
-$Version = $LatestRelease.tag_name
+try {
+    $LatestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/$RepoOwner/$RepoName/releases/latest"
+    $Version = $LatestRelease.tag_name
+    Write-Host "Found version: $Version" -ForegroundColor Green
+} catch {
+    Write-Error "Failed to get latest version: $_"
+    exit 1
+}
 
 # 下载地址
 $DownloadFile = "connectdev-windows.exe.zip"
@@ -27,23 +36,59 @@ $OutFile = Join-Path $TempDir $DownloadFile
 
 # 下载文件
 Write-Host "Downloading ConnectDev CLI..."
-Invoke-WebRequest -Uri $DownloadUrl -OutFile $OutFile
+try {
+    Invoke-WebRequest -Uri $DownloadUrl -OutFile $OutFile
+} catch {
+    Write-Error "Download failed: $_"
+    exit 1
+}
+
+# 验证下载
+$ChecksumUrl = "$DownloadUrl.sha256"
+try {
+    $Checksum = (Invoke-WebRequest -Uri $ChecksumUrl).Content.Trim()
+    $ActualChecksum = (Get-FileHash -Path $OutFile -Algorithm SHA256).Hash
+    if ($Checksum -ne $ActualChecksum) {
+        Write-Error "Checksum verification failed"
+        exit 1
+    }
+    Write-Host "Download verified" -ForegroundColor Green
+} catch {
+    Write-Error "Failed to verify download: $_"
+    exit 1
+}
 
 # 解压文件
 Write-Host "Extracting..."
-Expand-Archive -Path $OutFile -DestinationPath $TempDir -Force
+try {
+    Expand-Archive -Path $OutFile -DestinationPath $TempDir -Force
+} catch {
+    Write-Error "Extraction failed: $_"
+    exit 1
+}
 
 # 安装目录
 $InstallDir = "$env:ProgramFiles\ConnectDev"
 New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 
 # 移动文件
-Move-Item -Path "$TempDir\connectdev.exe" -Destination "$InstallDir\connectdev.exe" -Force
+try {
+    Move-Item -Path "$TempDir\connectdev.exe" -Destination "$InstallDir\connectdev.exe" -Force
+} catch {
+    Write-Error "Failed to install executable: $_"
+    exit 1
+}
 
 # 添加到 PATH
 $EnvPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
 if ($EnvPath -notlike "*$InstallDir*") {
-    [Environment]::SetEnvironmentVariable("Path", "$EnvPath;$InstallDir", [EnvironmentVariableTarget]::Machine)
+    try {
+        [Environment]::SetEnvironmentVariable("Path", "$EnvPath;$InstallDir", [EnvironmentVariableTarget]::Machine)
+        Write-Host "Added to PATH" -ForegroundColor Green
+    } catch {
+        Write-Error "Failed to update PATH: $_"
+        exit 1
+    }
 }
 
 # 清理

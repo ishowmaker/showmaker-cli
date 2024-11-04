@@ -7,26 +7,34 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# 仓库信息
+REPO_OWNER="ishowmaker"
+REPO_NAME="showmaker-cli"
+
 # 检测系统和架构
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
-# GitHub 仓库信息
-REPO_OWNER="ishowmaker"
-REPO_NAME="showmaker-cli"
+echo -e "${GREEN}Detecting system: ${OS} (${ARCH})${NC}"
 
-echo -e "${GREEN}Installing ConnectDev CLI...${NC}"
-
-# 获取最新版本
-LATEST_VERSION=$(curl -s https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-
-# 根据系统选择下载文件
+# 根据系统和架构选择下载文件
 case "${OS}" in
     "Darwin")
-        DOWNLOAD_FILE="connectdev-macos.tar.gz"
+        case "${ARCH}" in
+            "arm64")
+                DOWNLOAD_FILE="connectdev-macos-arm64.tar.gz"
+                ;;
+            "x86_64")
+                DOWNLOAD_FILE="connectdev-macos-x86_64.tar.gz"
+                ;;
+            *)
+                echo -e "${RED}Unsupported architecture: ${ARCH}${NC}"
+                exit 1
+                ;;
+        esac
         ;;
     "Linux")
-        DOWNLOAD_FILE="connectdev-linux.tar.gz"
+        DOWNLOAD_FILE="connectdev-linux-${ARCH}.tar.gz"
         ;;
     *)
         echo -e "${RED}Unsupported operating system: ${OS}${NC}"
@@ -34,15 +42,32 @@ case "${OS}" in
         ;;
 esac
 
+# 获取最新版本
+echo "Fetching latest version..."
+LATEST_VERSION=$(curl -s https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+
+if [ -z "${LATEST_VERSION}" ]; then
+    echo -e "${RED}Failed to get latest version${NC}"
+    exit 1
+fi
+
 # 创建临时目录
 TMP_DIR=$(mktemp -d)
-cd "${TMP_DIR}"
+cd "${TMP_DIR}" || exit 1
 
 # 下载文件
-echo "Downloading ConnectDev CLI..."
+echo -e "${GREEN}Downloading version ${LATEST_VERSION}...${NC}"
 DOWNLOAD_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${LATEST_VERSION}/${DOWNLOAD_FILE}"
-curl -LO "${DOWNLOAD_URL}"
-curl -LO "${DOWNLOAD_URL}.sha256"
+
+if ! curl -LO "${DOWNLOAD_URL}"; then
+    echo -e "${RED}Download failed${NC}"
+    exit 1
+fi
+
+if ! curl -LO "${DOWNLOAD_URL}.sha256"; then
+    echo -e "${RED}Checksum download failed${NC}"
+    exit 1
+fi
 
 # 验证校验和
 echo "Verifying download..."
@@ -63,13 +88,14 @@ sudo mv connectdev /usr/local/bin/
 sudo chmod +x /usr/local/bin/connectdev
 
 # 清理
-cd - > /dev/null
+cd - > /dev/null || exit 1
 rm -rf "${TMP_DIR}"
 
 # 验证安装
 if command -v connectdev > /dev/null; then
     echo -e "${GREEN}ConnectDev CLI has been installed successfully!${NC}"
-    echo "Version: $(connectdev --version)"
+    VERSION_OUTPUT=$(connectdev --version)
+    echo "Version: ${VERSION_OUTPUT}"
     echo "Run 'connectdev --help' to get started."
 else
     echo -e "${RED}Installation failed${NC}"
