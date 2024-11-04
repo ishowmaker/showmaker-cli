@@ -20,21 +20,16 @@ echo -e "${GREEN}Detecting system: ${OS} (${ARCH})${NC}"
 # 根据系统和架构选择下载文件
 case "${OS}" in
     "Darwin")
-        case "${ARCH}" in
-            "arm64")
-                DOWNLOAD_FILE="connectdev-macos-arm64.tar.gz"
-                ;;
-            "x86_64")
-                DOWNLOAD_FILE="connectdev-macos-x86_64.tar.gz"
-                ;;
-            *)
-                echo -e "${RED}Unsupported architecture: ${ARCH}${NC}"
-                exit 1
-                ;;
-        esac
+        # macOS 统一使用 arm64 版本
+        DOWNLOAD_FILE="connectdev-macos-arm64.tar.gz"
         ;;
     "Linux")
-        DOWNLOAD_FILE="connectdev-linux-${ARCH}.tar.gz"
+        if [ "${ARCH}" = "x86_64" ]; then
+            DOWNLOAD_FILE="connectdev-linux-x86_64.tar.gz"
+        else
+            echo -e "${RED}Unsupported architecture: ${ARCH}${NC}"
+            exit 1
+        fi
         ;;
     *)
         echo -e "${RED}Unsupported operating system: ${OS}${NC}"
