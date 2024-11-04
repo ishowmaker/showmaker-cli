@@ -4,10 +4,19 @@ on:
   release:
     types: [created]
 
+# 添加顶级权限配置
+permissions:
+  contents: write      # 允许上传到 release
+  packages: write     # 允许发布包
+  actions: write      # 允许管理 actions
+
 jobs:
   build:
     name: Build ConnectDev
     runs-on: ${{ matrix.os }}
+    # 也可以只在 build job 中添加权限
+    permissions:
+      contents: write  # 这是上传 release assets 所需的权限
     strategy:
       matrix:
         include:
