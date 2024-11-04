@@ -41,8 +41,11 @@ jobs:
 
   release:
     name: Create Release
-    needs: validate-scripts
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      actions: write
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.get_version.outputs.version }}
@@ -60,25 +63,6 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
-          body: |
-            ConnectDev CLI version ${{ steps.get_version.outputs.version }}
-            
-            ## Installation
-            
-            ### Quick Install (macOS & Linux)
-            ```bash
-            curl -fsSL https://raw.githubusercontent.com/ishowmaker/showmaker-cli/main/install.sh | bash
-            ```
-            
-            ### Quick Install (Windows PowerShell)
-            ```powershell
-            Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/ishowmaker/showmaker-cli/main/install.ps1'))
-            ```
-            
-            ### Using pip
-            ```bash
-            pip install connectdev
-            ```
           draft: false
           prerelease: false
 
