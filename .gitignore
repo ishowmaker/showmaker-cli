@@ -6,3 +6,4 @@ build/
 test/.pytest_cache/
 .idea/
 .DS_Store
+connectdev.egg-info/

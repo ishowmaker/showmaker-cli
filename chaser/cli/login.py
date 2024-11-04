@@ -6,11 +6,11 @@ from .constants import API_BASE_URL
 
 
 def login(
-        token: str = typer.Option(help="The token to use for authentication. From Chaser Console => "
-                                       "My Account => Personal Token"),
+        token: str = typer.Option(help="The token to use for authentication. From ConnectDev Console => "
+                                       "Account => Personal Token"),
 ):
     """
-    Login to Showmaker.
+    Login to ConnectDev.
     """
     typer.echo(f"Starting login with token.")
     try:

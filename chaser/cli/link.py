@@ -16,7 +16,7 @@ def link():
         return
     apps = get_app_list(access_token)
     if len(apps) == 0:
-        typer.echo("No apps found. Please create an app at https://llm.fun first.")
+        typer.echo("No apps found. Please create an app at https://connectdev.io first.")
 
     current_app_id = get_current_app_id(".")
     if not current_app_id:

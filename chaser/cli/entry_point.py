@@ -25,8 +25,8 @@ entrypoint_cli_typer = typer.Typer(
     help="""
     Chaser is the fastest way to run code in the cloud.
 
-    See the website at https://llm.fun for documentation and more information
-    about running code on Chaser.
+    See the website at https://connectdev.io for documentation and more information
+    about running code on ConnectDev.
     """,
 )
 

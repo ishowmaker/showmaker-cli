@@ -4,67 +4,172 @@ on:
   push:
     tags:
       - 'v*'
+    paths:
+      - 'install.sh'
+      - 'install.ps1'
+  pull_request:
+    paths:
+      - 'install.sh'
+      - 'install.ps1'
 
 jobs:
+  validate-scripts:
+    name: Validate Install Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Validate shell script
+        run: |
+          shellcheck install.sh
+          bash -n install.sh
+      
+      - name: Validate PowerShell script
+        if: runner.os == 'Windows'
+        run: |
+          $Results = Invoke-ScriptAnalyzer -Path install.ps1
+          if ($Results) {
+            $Results | Format-Table -AutoSize
+            exit 1
+          }
+
   release:
     name: Create Release
+    needs: validate-scripts
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
 
     steps:
+      - name: Get version
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            ConnectDev CLI version ${{ steps.get_version.outputs.version }}
+            
+            ## Installation
+            
+            ### Quick Install (macOS & Linux)
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/ishowmaker/showmaker-cli/main/install.sh | bash
+            ```
+            
+            ### Quick Install (Windows PowerShell)
+            ```powershell
+            Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/ishowmaker/showmaker-cli/main/install.ps1'))
+            ```
+            
+            ### Using pip
+            ```bash
+            pip install connectdev
+            ```
           draft: false
           prerelease: false
 
   build:
-    name: Build ShowMaker
+    name: Build ConnectDev
     needs: release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.9]
+        include:
+          - os: ubuntu-latest
+            asset_name: connectdev-linux
+          - os: windows-latest
+            asset_name: connectdev-windows.exe
+          - os: macos-latest
+            asset_name: connectdev-macos
+            
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.9'
 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install build twine pyinstaller
 
-    - name: Run Unit Tests
-      run: |
-        pytest test/
+    - name: Run Tests
+      run: pytest test/
 
     - name: Build Executable
+      run: pyinstaller connectdev.spec
+
+    - name: Generate checksum
       run: |
-        pyinstaller showmaker.spec
+        cd dist
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          certutil -hashfile connectdev.exe SHA256 > connectdev-${{ matrix.asset_name }}.sha256
+        else
+          shasum -a 256 connectdev > connectdev-${{ matrix.asset_name }}.sha256
+        fi
 
     - name: Package
-      working-directory: .
+      shell: bash
       run: |
-        tar -zcvf showmaker-${{ matrix.os }}.tar.gz -C dist .  
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          7z a connectdev-${{ matrix.asset_name }}.zip ./dist/connectdev.exe
+        else
+          tar -czf connectdev-${{ matrix.asset_name }}.tar.gz -C dist connectdev
+        fi
 
-    - name: Upload Release Asset
-      id: upload-release-asset
+    - name: Upload Binary
       uses: actions/upload-release-asset@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.release.outputs.upload_url }}
-        asset_path: ./showmaker-${{ matrix.os }}.tar.gz
-        asset_name: showmaker-${{ matrix.os }}.tar.gz
-        asset_content_type: application/gzip
+        asset_path: ./connectdev-${{ matrix.asset_name }}.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
+        asset_name: connectdev-${{ matrix.asset_name }}.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
+        asset_content_type: ${{ matrix.os == 'windows-latest' && 'application/zip' || 'application/gzip' }}
+
+    - name: Upload Checksum
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.release.outputs.upload_url }}
+        asset_path: ./dist/connectdev-${{ matrix.asset_name }}.sha256
+        asset_name: connectdev-${{ matrix.asset_name }}.sha256
+        asset_content_type: text/plain
+
+  publish:
+    name: Publish to PyPI
+    needs: [release, build]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+
+    - name: Install build tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+
+    - name: Build package
+      run: python -m build
+
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      run: twine upload dist/*
