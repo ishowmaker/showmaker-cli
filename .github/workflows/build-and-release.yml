@@ -4,19 +4,17 @@ on:
   release:
     types: [created]
 
-# 添加顶级权限配置
 permissions:
-  contents: write      # 允许上传到 release
-  packages: write     # 允许发布包
-  actions: write      # 允许管理 actions
+  contents: write
+  packages: write
+  actions: write
 
 jobs:
   build:
     name: Build ConnectDev
     runs-on: ${{ matrix.os }}
-    # 也可以只在 build job 中添加权限
     permissions:
-      contents: write  # 这是上传 release assets 所需的权限
+      contents: write
     strategy:
       matrix:
         include:
@@ -46,14 +44,22 @@ jobs:
     - name: Build Executable
       run: pyinstaller connectdev.spec
 
-    - name: Generate checksum
+    # Windows 系统生成校验和
+    - name: Generate checksum (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
       run: |
         cd dist
-        if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          certutil -hashfile connectdev.exe SHA256 > connectdev-${{ matrix.asset_name }}.sha256
-        else
-          shasum -a 256 connectdev > connectdev-${{ matrix.asset_name }}.sha256
-        fi
+        $hash = Get-FileHash -Path connectdev.exe -Algorithm SHA256
+        $hash.Hash > connectdev-${{ matrix.asset_name }}.sha256
+
+    # Unix 系统生成校验和
+    - name: Generate checksum (Unix)
+      if: matrix.os != 'windows-latest'
+      shell: bash
+      run: |
+        cd dist
+        shasum -a 256 connectdev > connectdev-${{ matrix.asset_name }}.sha256
 
     - name: Package
       shell: bash
