@@ -1,6 +1,12 @@
 name: Build and Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        default: 'v0.1.0'
   push:
     tags:
       - 'v*'
