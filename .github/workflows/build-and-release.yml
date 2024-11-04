@@ -19,11 +19,15 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            asset_name: connectdev-linux
+            asset_name: linux-x86_64
           - os: windows-latest
-            asset_name: connectdev-windows.exe
+            asset_name: windows.exe
           - os: macos-latest
-            asset_name: connectdev-macos
+            asset_name: macos-x86_64
+            target: x86_64
+          - os: macos-latest
+            asset_name: macos-arm64
+            target: arm64
     steps:
     - uses: actions/checkout@v2
 
@@ -42,7 +46,19 @@ jobs:
       run: pytest test/
 
     - name: Build Executable
-      run: pyinstaller connectdev.spec
+      run: |
+        if [ "${{ matrix.os }}" == "macos-latest" ]; then
+          # macOS 特定的构建命令
+          if [ "${{ matrix.target }}" == "arm64" ]; then
+            pyinstaller --target-arch arm64 connectdev.spec
+          else
+            pyinstaller --target-arch x86_64 connectdev.spec
+          fi
+        else
+          # 其他平台的构建命令
+          pyinstaller connectdev.spec
+        fi
+      shell: bash
 
     # Windows 系统生成校验和
     - name: Generate checksum (Windows)
