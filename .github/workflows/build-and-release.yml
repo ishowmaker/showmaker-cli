@@ -1,4 +1,4 @@
-name: Build and Release
+name: Test-Build-Release
 
 on:
   release:
@@ -26,6 +26,24 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Cache pytest
+      uses: actions/cache@v3
+      with:
+        path: |
+          .pytest_cache
+          test/__pycache__
+        key: ${{ runner.os }}-pytest-${{ hashFiles('test/**/*') }}
+        restore-keys: |
+          ${{ runner.os }}-pytest-
 
     - name: Set up Python
       uses: actions/setup-python@v2
@@ -99,14 +117,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.9'
-      - name: Install build tools
+          
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install build twine
+          pip install -r requirements.txt
+          pip install build twine pytest
+          
+      - name: Run Tests
+        run: pytest test/
+        
       - name: Build package
         run: python -m build
       - name: Publish to PyPI
